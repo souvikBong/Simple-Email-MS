@@ -1,0 +1,14 @@
+
+cloud:
+  aws:
+    region:
+      static: us-east-1
+    credentials:
+      access-key: YOUR_ACCESS_KEY
+      secret-key: YOUR_SECRET_KEY
+    stack:
+      auto: false
+
+sqs:
+  email-input-queue: email-input-queue
+  status-output-queue: email-status-queue

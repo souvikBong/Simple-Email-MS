@@ -1,0 +1,41 @@
+**I am supposed to develop the ebm-sms-cloud-integration service microservice, which will be present in the AWS. Another person is developing the ebm-sms-service (on-prem). Although the payloads are unknown till now, and the dependency between these two needs to be clear, but I am supposed to develop this cloud counterpart. If you want, I can provide a diagram of the flow as well.
+
+------------------------------------------------------------------------------------------------------------------------------------------
+
+
+## service/PublisherService.java
+publisher.publishMemoCreate(json, group, dedupe);
+
+
+toDelete.add(m);
+log.info("Submission notif processed, forwarded to CIV & MEMO. msgId={} group={} at {}",
+m.messageId(), group, Instant.now());
+} catch (Exception e) {
+log.error("Failed processing submission notification msgId={}: {}", m.messageId(), e.toString(), e);
+// don't delete -> will retry / go to DLQ per redrive policy
+}
+}
+deleteBatch(submissionQueueUrl, toDelete);
+}
+
+
+/** Polls delivery notifications and writes to S3. */
+@Scheduled(fixedDelayString = "PT1S")
+public void pollDeliveryNotifications() {
+if (deliveryQueueUrl == null || deliveryQueueUrl.isBlank()) return;
+List<Message> toDelete = new ArrayList<>();
+ReceiveMessageResponse resp = sqs.receiveMessage(baseReceive(deliveryQueueUrl));
+for (Message m : resp.messages()) {
+try {
+JsonNode json = om.readTree(m.body());
+s3Writer.persist(json);
+toDelete.add(m);
+log.info("Delivery notif persisted to S3. msgId={} at {}", m.messageId(), Instant.now());
+} catch (Exception e) {
+log.error("Failed processing delivery notification msgId={}: {}", m.messageId(), e.toString(), e);
+}
+}
+deleteBatch(deliveryQueueUrl, toDelete);
+}
+}
+```
